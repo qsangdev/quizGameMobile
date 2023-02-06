@@ -6,10 +6,20 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React from 'react';
+import React, {useEffect} from 'react';
 import Title from '../components/title';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Home = ({navigation}) => {
+  useEffect(() => {
+    checkScore();
+  }, []);
+  const checkScore = async () => {
+    let score = await AsyncStorage.getItem('score');
+    if (score) {
+      navigation.navigate('Result', {score: score});
+    }
+  };
   return (
     <View style={styles.container}>
       <Title titleText="QUIZZLER" />

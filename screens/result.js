@@ -1,9 +1,17 @@
 import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import Title from '../components/title';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Result = ({navigation, route}) => {
-  const {score} = route.params;
+  const [score, setScore] = useState(route.params.score);
+  useEffect(() => {
+    saveScore();
+  }, []);
+  const saveScore = async () => {
+    await AsyncStorage.setItem('score', score.toString());
+  };
+
   const resultBanner =
     score > 20
       ? 'https://as1.ftcdn.net/v2/jpg/02/75/45/20/1000_F_275452071_YRRXaB6LsXQZU7eyhvRHkfmttlJrPT4n.jpg'
@@ -21,7 +29,10 @@ const Result = ({navigation, route}) => {
         />
       </View>
       <TouchableOpacity
-        onPress={() => navigation.navigate('Home')}
+        onPress={async () => {
+          await AsyncStorage.removeItem('score');
+          navigation.navigate('Home');
+        }}
         style={styles.button}>
         <Text style={styles.buttonText}>Go to Home</Text>
       </TouchableOpacity>

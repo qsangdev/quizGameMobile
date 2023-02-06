@@ -79,6 +79,9 @@ const Quiz = ({navigation}) => {
         questions && (
           <View style={styles.parent}>
             <View style={styles.top}>
+              <View style={styles.buttonText}>
+                <Text> Current Score: {score}</Text>
+              </View>
               <Text style={styles.question}>
                 Q. {decodeURIComponent(questions[ques].question)}
               </Text>
@@ -98,20 +101,24 @@ const Quiz = ({navigation}) => {
                   {decodeURIComponent(options[1])}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.optionButton}
-                onPress={() => handleSelectedOption(options[2])}>
-                <Text style={styles.option}>
-                  {decodeURIComponent(options[2])}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.optionButton}
-                onPress={() => handleSelectedOption(options[3])}>
-                <Text style={styles.option}>
-                  {decodeURIComponent(options[3])}
-                </Text>
-              </TouchableOpacity>
+              {options[2] && (
+                <TouchableOpacity
+                  style={styles.optionButton}
+                  onPress={() => handleSelectedOption(options[2])}>
+                  <Text style={styles.option}>
+                    {decodeURIComponent(options[2])}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {options[3] && (
+                <TouchableOpacity
+                  style={styles.optionButton}
+                  onPress={() => handleSelectedOption(options[3])}>
+                  <Text style={styles.option}>
+                    {decodeURIComponent(options[3])}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
             <View style={styles.bottom}>
               {ques > 0 && (
