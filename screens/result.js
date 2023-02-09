@@ -1,16 +1,37 @@
-import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import React, {useEffect, useState} from 'react';
+import {
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Animated,
+} from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
 import Title from '../components/title';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Result = ({navigation, route}) => {
   const [score, setScore] = useState(route.params.score);
   useEffect(() => {
-    saveScore();
+    checkScore();
   }, []);
-  const saveScore = async () => {
-    await AsyncStorage.setItem('score', score.toString());
+
+  const checkScore = async () => {
+    let score = await AsyncStorage.getItem('score');
+    setScore(score);
   };
+
+  const startValue = useRef(new Animated.Value(0)).current;
+  const endValue = 1;
+  const duration = 3000;
+
+  useEffect(() => {
+    Animated.timing(startValue, {
+      toValue: endValue,
+      duration: duration,
+      useNativeDriver: true,
+    }).start();
+  }, [startValue]);
 
   const resultBanner =
     score > 20
@@ -19,15 +40,25 @@ const Result = ({navigation, route}) => {
   return (
     <View style={styles.container}>
       <Title titleText="RESULT" />
-      <Text style={styles.scoreValue}>{score}</Text>
-      <View style={styles.bannerContainer}>
+      <Text style={styles.scoreValue}>{score}/100</Text>
+      <Animated.View
+        style={[
+          styles.bannerContainer,
+          {
+            transform: [
+              {
+                scale: startValue,
+              },
+            ],
+          },
+        ]}>
         <Image
           source={{
             uri: resultBanner,
           }}
           style={styles.banner}
         />
-      </View>
+      </Animated.View>
       <TouchableOpacity
         onPress={async () => {
           await AsyncStorage.removeItem('score');

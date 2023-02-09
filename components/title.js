@@ -1,10 +1,13 @@
 import {StyleSheet, Text, View} from 'react-native';
 import React from 'react';
+import AnimatedText from './AnimatedText';
 
 const Title = ({titleText}) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{titleText}</Text>
+      <Text style={styles.title}>
+        <AnimatedText style={styles.title} text={[`${titleText}`]} />
+      </Text>
     </View>
   );
 };
