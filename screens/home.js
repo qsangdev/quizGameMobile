@@ -15,16 +15,15 @@ import Title from '../components/title';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {whoosh} from './Settings';
 import {TouchableWithoutFeedback} from 'react-native-gesture-handler';
-import {useIsFocused} from '@react-navigation/native';
 
 const Home = ({navigation}) => {
   //check the state of music setting
   const checkMusic = async () => {
     let music = await AsyncStorage.getItem('music');
-    if (music == 'true') {
+    if (music === 'true') {
       whoosh.play();
       console.log(music);
-    } else if (music == 'false') {
+    } else if (music === 'false') {
       whoosh.pause();
     }
   };
@@ -78,24 +77,16 @@ const Home = ({navigation}) => {
 
   const checkVibro = async () => {
     let vibro = await AsyncStorage.getItem('vibro');
-    if (vibro == 'true') {
+    if (vibro === 'true') {
       return true;
-    } else if (vibro == 'false') {
+    } else if (vibro === 'false') {
       return false;
     }
   };
 
   useEffect(() => {
-    checkScore();
     checkMusic();
   }, []);
-
-  const checkScore = async () => {
-    let score = await AsyncStorage.getItem('score');
-    if (score) {
-      navigation.navigate('Result', {score: score});
-    }
-  };
 
   //Animations
 

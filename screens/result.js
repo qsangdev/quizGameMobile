@@ -12,14 +12,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Result = ({navigation, route}) => {
   const [score, setScore] = useState(route.params.score);
-  useEffect(() => {
-    checkScore();
-  }, []);
-
-  const checkScore = async () => {
-    let score = await AsyncStorage.getItem('score');
-    setScore(score);
-  };
 
   const startValue = useRef(new Animated.Value(0)).current;
   const endValue = 1;

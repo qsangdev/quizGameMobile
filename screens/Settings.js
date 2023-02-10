@@ -3,6 +3,7 @@ import React, {useEffect, useState} from 'react';
 import Title from '../components/title';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Sound from 'react-native-sound';
+import {TouchableOpacity} from 'react-native-gesture-handler';
 
 Sound.setCategory('Playback');
 
@@ -21,7 +22,7 @@ var whoosh = new Sound('background_sound.mp3', Sound.MAIN_BUNDLE, error => {
   );
 });
 
-const Settings = () => {
+const Settings = ({navigation}) => {
   const [isVEnabled, setIsVEnabled] = useState(false);
   const [isMEnabled, setIsMEnabled] = useState(false);
 
@@ -86,6 +87,13 @@ const Settings = () => {
             value={isMEnabled}
           />
         </View>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={async () => {
+            navigation.navigate('Home');
+          }}>
+          <Text style={styles.buttonText}>Save</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
