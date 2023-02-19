@@ -14,7 +14,10 @@ import React, {useEffect, useRef} from 'react';
 import Title from '../components/title';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {whoosh} from './Settings';
-import {TouchableWithoutFeedback} from 'react-native-gesture-handler';
+import {
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+} from 'react-native-gesture-handler';
 
 const Home = ({navigation}) => {
   //check the state of music setting
@@ -116,6 +119,7 @@ const Home = ({navigation}) => {
   let transformStyle2 = {transform: [{scale: cardScale2}]};
   let transformStyle3 = {transform: [{scale: cardScale3}]};
   let transformStyle4 = {transform: [{rotate: rotation}]};
+
   return (
     <View style={styles.container}>
       <Title titleText="QUIZZLER" />
@@ -179,6 +183,33 @@ const Home = ({navigation}) => {
           <Text style={styles.buttonText}>Start</Text>
         </TouchableWithoutFeedback>
       </Animated.View>
+      <Animated.View style={transformStyle3}>
+        <TouchableWithoutFeedback
+          onPressIn={() => {
+            scaleValue3.setValue(0);
+            Animated.timing(scaleValue3, {
+              toValue: 1,
+              duration: 350,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }).start();
+            if (checkVibro) {
+              Vibration.vibrate();
+            }
+          }}
+          onPressOut={() => {
+            Animated.timing(scaleValue3, {
+              toValue: 0,
+              duration: 150,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }).start();
+            navigation.navigate('Ranking');
+          }}
+          style={styles.button}>
+          <Text style={styles.buttonText}>Ranking</Text>
+        </TouchableWithoutFeedback>
+      </Animated.View>
       <Animated.View style={transformStyle2}>
         <TouchableWithoutFeedback
           onPressIn={() => {
@@ -208,46 +239,6 @@ const Home = ({navigation}) => {
           }}
           style={styles.button}>
           <Text style={styles.buttonText}>Settings</Text>
-        </TouchableWithoutFeedback>
-      </Animated.View>
-      <Animated.View style={transformStyle3}>
-        <TouchableWithoutFeedback
-          onPressIn={() => {
-            scaleValue3.setValue(0);
-            Animated.timing(scaleValue3, {
-              toValue: 1,
-              duration: 350,
-              easing: Easing.linear,
-              useNativeDriver: true,
-            }).start();
-            if (checkVibro) {
-              Vibration.vibrate();
-            }
-          }}
-          onPressOut={() => {
-            Animated.timing(scaleValue3, {
-              toValue: 0,
-              duration: 150,
-              easing: Easing.linear,
-              useNativeDriver: true,
-            }).start();
-            Alert.alert('Hold on!', 'Are you sure you want to exit?', [
-              {
-                text: 'Cancel',
-                onPress: () => null,
-                style: 'cancel',
-              },
-              {
-                text: 'YES',
-                onPress: () => {
-                  BackHandler.exitApp();
-                  whoosh.pause();
-                },
-              },
-            ]);
-          }}
-          style={styles.button}>
-          <Text style={styles.buttonText}>Exit</Text>
         </TouchableWithoutFeedback>
       </Animated.View>
     </View>

@@ -5,17 +5,83 @@ import {
   TouchableOpacity,
   View,
   Animated,
+  Keyboard,
+  Alert,
+  BackHandler,
 } from 'react-native';
 import React, {useEffect, useRef, useState} from 'react';
 import Title from '../components/title';
+import {TextInput} from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const Result = ({navigation, route}) => {
-  const [score, setScore] = useState(route.params.score);
-
+const Result = ({navigation}) => {
+  const [score, setScore] = useState('');
+  const [name, setName] = useState('');
   const startValue = useRef(new Animated.Value(0)).current;
   const endValue = 1;
   const duration = 3000;
+
+  useEffect(() => {
+    const backAction = () => {
+      Alert.alert('Hold on!', 'Scores will not be saved if you exit!', [
+        {
+          text: 'Cancel',
+          onPress: () => null,
+          style: 'cancel',
+        },
+        {text: 'YES', onPress: () => navigation.navigate('Home')},
+      ]);
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction,
+    );
+
+    return () => backHandler.remove();
+  }, []);
+
+  useEffect(() => {
+    loadScore();
+  }, [score]);
+
+  const loadScore = async () => {
+    const finallyScore = await AsyncStorage.getItem('score');
+    setScore(finallyScore);
+  };
+
+  const backHome = () => {
+    Alert.alert('Hold on!', 'Return without saving your points?', [
+      {
+        text: 'Cancel',
+        onPress: () => null,
+        style: 'cancel',
+      },
+      {text: 'YES', onPress: () => navigation.navigate('Home')},
+    ]);
+  };
+
+  const saveValue = async () => {
+    try {
+      const data = JSON.parse(await AsyncStorage.getItem('players')) || [];
+      if (name) {
+        const newPlayer = {name: name, score: score};
+        data.push(newPlayer);
+        data.sort((a, b) => b.score - a.score);
+        data.splice(5);
+        await AsyncStorage.setItem('players', JSON.stringify(data));
+        alert('Player Saved');
+        setName('');
+        Keyboard.dismiss();
+        navigation.navigate('Home');
+      } else {
+        alert('Please enter your name..');
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   useEffect(() => {
     Animated.timing(startValue, {
@@ -51,12 +117,18 @@ const Result = ({navigation, route}) => {
           style={styles.banner}
         />
       </Animated.View>
-      <TouchableOpacity
-        onPress={async () => {
-          await AsyncStorage.removeItem('score');
-          navigation.navigate('Home');
-        }}
-        style={styles.button}>
+      <View>
+        <TextInput
+          value={name}
+          style={styles.textInput}
+          placeholder="Enter your name.."
+          onChangeText={data => setName(data)}
+        />
+        <TouchableOpacity style={styles.button} onPress={saveValue}>
+          <Text style={styles.buttonText}>Save</Text>
+        </TouchableOpacity>
+      </View>
+      <TouchableOpacity onPress={backHome} style={styles.button}>
         <Text style={styles.buttonText}>Go to Home</Text>
       </TouchableOpacity>
     </View>
@@ -87,7 +159,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 20,
   },
   buttonText: {
     fontSize: 24,
@@ -98,5 +170,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     alignSelf: 'center',
+  },
+  textInput: {
+    fontSize: 24,
+    padding: 10,
+    borderRadius: 14,
+    marginBottom: 20,
+    backgroundColor: 'white',
+    textAlign: 'center',
   },
 });

@@ -4,6 +4,7 @@ import Home from '../screens/home';
 import Quiz from '../screens/quiz';
 import Result from '../screens/result';
 import Settings from '../screens/Settings';
+import Ranking from '../screens/ranking';
 
 const Stack = createStackNavigator();
 
@@ -28,6 +29,11 @@ function MyStack() {
       <Stack.Screen
         name="Result"
         component={Result}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name="Ranking"
+        component={Ranking}
         options={{headerShown: false}}
       />
     </Stack.Navigator>

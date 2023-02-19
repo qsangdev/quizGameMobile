@@ -1,3 +1,5 @@
+/* eslint-disable react/self-closing-comp */
+/* eslint-disable react-native/no-inline-styles */
 import {
   StyleSheet,
   ActivityIndicator,
@@ -6,10 +8,14 @@ import {
   View,
   Vibration,
   Alert,
+  Animated,
 } from 'react-native';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {COLORS, SIZES} from '../constants/';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 const shuffleArray = array => {
   for (let i = array.length - 1; i > 0; i--) {
@@ -24,15 +30,12 @@ const Quiz = ({navigation}) => {
   const [options, setOptions] = useState([]);
   const [score, setScore] = useState(0);
   const [isLoading, setLoading] = useState(false);
-
-  const checkVibro = async () => {
-    let vibro = await AsyncStorage.getItem('vibro');
-    if (vibro === 'true') {
-      return true;
-    } else if (vibro === 'false') {
-      return false;
-    }
-  };
+  const [correctOption, setCorrectOption] = useState(null);
+  const [currentOptionSelected, setCurrentOptionSelected] = useState(null);
+  const [isOptionsDisabled, setIsOptionsDisabled] = useState(false);
+  const [progress, setProgress] = useState(new Animated.Value(0));
+  const [count, setCount] = useState(10);
+  const [startCountdown, setStartCountdown] = useState(false);
 
   const getQuiz = async () => {
     setLoading(true);
@@ -43,165 +46,278 @@ const Quiz = ({navigation}) => {
     setQuestions(data.results);
     setOptions(optionsShuffled(data.results[0]));
     setLoading(false);
+    setStartCountdown(true);
   };
 
   useEffect(() => {
     getQuiz();
   }, []);
 
+  useEffect(() => {
+    if (startCountdown) {
+      const timer = count > 0 && setInterval(() => setCount(count - 1), 1000);
+
+      if (count === 0) {
+        setStartCountdown(false);
+        setCount(10);
+        autoNextQuestion();
+      }
+
+      return () => clearInterval(timer);
+    }
+  }, [count, startCountdown]);
+
+  const autoNextQuestion = () => {
+    setCorrectOption(questions[ques].correct_answer);
+    if (ques + 1 < questions.length) {
+      setTimeout(() => {
+        handleNextPress();
+      }, 1000);
+    } else {
+      setStartCountdown(false);
+      setTimeout(() => {
+        handleShowResult();
+      }, 1000);
+    }
+  };
+
   const handleNextPress = () => {
     setQues(ques + 1);
+    setCount(10);
+    setStartCountdown(true);
     setOptions(optionsShuffled(questions[ques + 1]));
+    setCurrentOptionSelected(null);
+    setCorrectOption(null);
+    setIsOptionsDisabled(false);
+    Animated.timing(progress, {
+      toValue: ques + 1,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
   };
 
   const optionsShuffled = q => {
-    const options = [...q.incorrect_answers];
-    options.push(q.correct_answer);
-    shuffleArray(options);
-    return options;
+    const optionss = [...q.incorrect_answers];
+    optionss.push(q.correct_answer);
+    shuffleArray(optionss);
+    return optionss;
   };
 
   const handleSelectedOption = q => {
+    setCurrentOptionSelected(q);
+    setCorrectOption(questions[ques].correct_answer);
+    setIsOptionsDisabled(true);
+    setStartCountdown(false);
     if (q === questions[ques].correct_answer) {
-      setScore(score => score + 10);
+      setScore(score + 10);
     }
-    if (ques !== 9) {
-      setQues(ques + 1);
-      setOptions(optionsShuffled(questions[ques + 1]));
-    }
-    if (ques === 9) {
-      handleShowResult();
+    if (ques + 1 < questions.length) {
+      setTimeout(() => {
+        handleNextPress();
+      }, 1000);
+    } else {
+      setTimeout(() => {
+        handleShowResult();
+      }, 1000);
     }
   };
 
-  // useEffect(() => {
-  //   saveScore();
-  // }, [score]);
+  useEffect(() => {
+    saveScore();
+  }, [score]);
 
-  // const saveScore = async () => {
-  //   await AsyncStorage.setItem('score', score.toString());
-  // };
+  const saveScore = async () => {
+    await AsyncStorage.setItem('score', score.toString());
+  };
 
   const handleShowResult = () => {
-    navigation.navigate('Result', {score: score});
+    navigation.navigate('Result');
   };
 
-  const backHomeButton = () =>
+  const backHomeButton = () => {
+    setStartCountdown(false);
     Alert.alert(
       'Are you sure?',
       'Scores will not be saved if you exit midway',
       [
         {
           text: 'Cancel',
-          onPress: () => console.log('Cancel Pressed'),
+          onPress: () => setStartCountdown(true),
           style: 'cancel',
         },
         {text: 'OK', onPress: () => navigation.navigate('Home')},
       ],
     );
+  };
+
+  const progressAnim = progress.interpolate({
+    inputRange: [0, 10],
+    outputRange: ['0%', '100%'],
+  });
+
+  const checkVibro = async () => {
+    let vibro = await AsyncStorage.getItem('vibro');
+    if (vibro === 'true') {
+      return true;
+    } else if (vibro === 'false') {
+      return false;
+    }
+  };
 
   return (
-    <View style={styles.container}>
-      {isLoading ? (
-        <View>
-          <ActivityIndicator size="large" color="#9166FE" />
-        </View>
-      ) : (
-        questions && (
-          <View style={styles.parent}>
-            <View style={styles.top}>
-              <Text style={styles.scoreText}>Current Score: {score}</Text>
+    <SafeAreaView>
+      <View style={styles.container}>
+        {isLoading ? (
+          <View>
+            <ActivityIndicator size="large" color="#9166FE" />
+          </View>
+        ) : (
+          questions && (
+            <View style={styles.parent}>
               <Text style={styles.scoreText}>
                 {ques + 1}/{questions.length}
               </Text>
-              <Text style={styles.question}>
-                {decodeURIComponent(questions[ques].question)}
-              </Text>
-            </View>
-            <View style={styles.options}>
-              <TouchableOpacity
-                style={styles.optionButton}
-                onPress={() => {
-                  handleSelectedOption(options[0]);
-                  if (checkVibro) {
-                    Vibration.vibrate();
-                  }
+              <View
+                style={{
+                  width: '100%',
+                  height: 20,
+                  borderRadius: 20,
+                  backgroundColor: '#00000020',
                 }}>
-                <Text style={styles.option}>
-                  {decodeURIComponent(options[0])}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.optionButton}
-                onPress={() => {
-                  handleSelectedOption(options[1]);
-                  if (checkVibro) {
-                    Vibration.vibrate();
-                  }
-                }}>
-                <Text style={styles.option}>
-                  {decodeURIComponent(options[1])}
-                </Text>
-              </TouchableOpacity>
-              {options[2] && (
-                <TouchableOpacity
-                  style={styles.optionButton}
-                  onPress={() => {
-                    handleSelectedOption(options[2]);
-                    if (checkVibro) {
-                      Vibration.vibrate();
-                    }
-                  }}>
-                  <Text style={styles.option}>
-                    {decodeURIComponent(options[2])}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              {options[3] && (
-                <TouchableOpacity
-                  style={styles.optionButton}
-                  onPress={() => {
-                    handleSelectedOption(options[3]);
-                    if (checkVibro) {
-                      Vibration.vibrate();
-                    }
-                  }}>
-                  <Text style={styles.option}>
-                    {decodeURIComponent(options[3])}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            <View style={styles.bottom}>
-              <TouchableOpacity style={styles.button} onPress={backHomeButton}>
-                <Text style={styles.buttonText}>HOME</Text>
-              </TouchableOpacity>
+                <Animated.View
+                  style={[
+                    {
+                      height: 20,
+                      borderRadius: 20,
+                      backgroundColor: '#9166FE',
+                    },
+                    {
+                      width: progressAnim,
+                    },
+                  ]}></Animated.View>
+              </View>
+              <View style={styles.top}>
+                <View style={styles.topFlex}>
+                  <Text style={styles.scoreText}>Current Score: {score}</Text>
+                  <Text style={styles.scoreText}>{count}</Text>
+                </View>
 
-              {ques !== 9 && (
+                <Text style={styles.question}>
+                  {decodeURIComponent(questions[ques].question)}
+                </Text>
+              </View>
+              <View style={styles.options}>
+                {options.map(q => {
+                  return (
+                    <TouchableOpacity
+                      key={q}
+                      style={{
+                        borderWidth: 3,
+                        borderColor:
+                          q === correctOption
+                            ? COLORS.success
+                            : q === currentOptionSelected
+                            ? COLORS.error
+                            : COLORS.secondary + '80',
+                        backgroundColor:
+                          q === correctOption
+                            ? COLORS.success + '20'
+                            : q === currentOptionSelected
+                            ? COLORS.error + '20'
+                            : COLORS.secondary + '60',
+                        height: 60,
+                        borderRadius: 12,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingHorizontal: 12,
+                        marginVertical: 6,
+                        // paddingVertical: 12,
+                      }}
+                      disabled={isOptionsDisabled}
+                      onPress={() => {
+                        handleSelectedOption(q);
+                        if (checkVibro) {
+                          Vibration.vibrate();
+                        }
+                      }}>
+                      <Text style={styles.option}>{decodeURIComponent(q)}</Text>
+
+                      {q === correctOption ? (
+                        <View
+                          style={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: 30 / 2,
+                            backgroundColor: COLORS.success,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}>
+                          <MaterialCommunityIcons
+                            name="check"
+                            style={{
+                              color: COLORS.white,
+                              fontSize: 20,
+                            }}
+                          />
+                        </View>
+                      ) : q === currentOptionSelected ? (
+                        <View
+                          style={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: 30 / 2,
+                            backgroundColor: COLORS.error,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}>
+                          <MaterialCommunityIcons
+                            name="close"
+                            style={{
+                              color: COLORS.white,
+                              fontSize: 20,
+                            }}
+                          />
+                        </View>
+                      ) : null}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <View style={styles.bottom}>
                 <TouchableOpacity
                   style={styles.button}
-                  onPress={handleNextPress}>
-                  <Text style={styles.buttonText}>SKIP</Text>
+                  onPress={backHomeButton}>
+                  <Text style={styles.buttonText}>HOME</Text>
                 </TouchableOpacity>
-              )}
 
-              {ques === 9 && (
-                <TouchableOpacity
-                  style={styles.button}
-                  onPress={() => {
-                    handleShowResult();
-                    if (checkVibro) {
-                      Vibration.vibrate();
-                    }
-                  }}>
-                  <Text style={styles.buttonText}>SHOW RESULTS</Text>
-                </TouchableOpacity>
-              )}
+                {ques !== 9 && (
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={handleNextPress}>
+                    <Text style={styles.buttonText}>SKIP</Text>
+                  </TouchableOpacity>
+                )}
+
+                {ques === 9 && (
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => {
+                      handleShowResult();
+                      if (checkVibro) {
+                        Vibration.vibrate();
+                      }
+                    }}>
+                    <Text style={styles.buttonText}>SHOW RESULTS</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-          </View>
-        )
-      )}
-    </View>
+          )
+        )}
+      </View>
+    </SafeAreaView>
   );
 };
 
@@ -217,6 +333,10 @@ const styles = StyleSheet.create({
   top: {
     marginVertical: 16,
   },
+  topFlex: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   options: {
     marginVertical: 16,
     flex: 1,
@@ -231,7 +351,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#9166FE',
     padding: 12,
     paddingHorizontal: 16,
-    borderRadius: 16,
+    borderRadius: 12,
     alignItems: 'center',
     marginBottom: 30,
   },
@@ -249,13 +369,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '500',
     color: 'white',
-  },
-  optionButton: {
-    paddingVertical: 12,
-    marginVertical: 6,
-    backgroundColor: '#9166FE',
-    paddingHorizontal: 12,
-    borderRadius: 12,
   },
   parent: {
     height: '100%',
